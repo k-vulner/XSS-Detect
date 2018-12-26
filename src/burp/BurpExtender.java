@@ -53,7 +53,6 @@ public class BurpExtender extends AbstractTableModel
 	SimpleDateFormat df = new SimpleDateFormat("yyyy-MM-dd_HH:mm:ss");
 	private static int intRequestId = 0;
 	private static boolean isOpen = false;
-	static HashMap<String, RandomStrLog> hashmapRequestIdWithStr = new HashMap<String, RandomStrLog>();
 	static ArrayList<Integer> xssIdList = new ArrayList<Integer>();
 	private static Color colorNoticing = new Color(255, 255, 0);
 	private Table table1 = new Table(BurpExtender.this);
@@ -99,7 +98,7 @@ public class BurpExtender extends AbstractTableModel
 							isOpen = true;
 						} else {
 							toggleBtn.setText("未开启XSS检测");
-							hashmapRequestIdWithStr.clear();
+							Utilities.hashmapRequestIdWithStr.clear();
 							xssIdList.clear();
 							isOpen = false;
 							intRequestId = 0;
@@ -162,7 +161,6 @@ public class BurpExtender extends AbstractTableModel
 		requestParames = requestInfo.getParameters();
 		for (IParameter ipara : requestParames) {
 			try {
-				Utilities.out(ipara.getName() + ":" + ipara.getValue());
 				IParameter tmpIpara;
 				byte[] tmpRequest;
 				IHttpRequestResponse tmpRespon;
@@ -185,7 +183,9 @@ public class BurpExtender extends AbstractTableModel
 					try {
 						tmpIpara = helpers.buildParameter(ipara.getName(),
 								Utilities.randomStr(requestId, ipara.getName()), ipara.getType());
+
 						tmpRequest = helpers.updateParameter(request, tmpIpara);
+						Utilities.out(helpers.bytesToString(tmpRequest));
 						tmpRespon = callbacks.makeHttpRequest(messageInfo.getHttpService(), tmpRequest);
 						search(tmpRespon, requestId, table1);
 					} catch (Exception e) {
@@ -204,13 +204,13 @@ public class BurpExtender extends AbstractTableModel
 
 	}
 
-	boolean search(IHttpRequestResponse messageInfo, int requestId, Table table1) {
+	boolean search(IHttpRequestResponse messageInfo, int responId, Table table1) {
 		String tmpRespon = helpers.bytesToString(messageInfo.getResponse());
 		for (Entry<String, RandomStrLog> tmp : Utilities.hashmapRequestIdWithStr.entrySet()) {
 			try {
 				if (tmpRespon.contains(tmp.getKey())) {
-					xssIdList.add(requestId);
-					setTableWhenFindVulner(table1, tmp.getValue().requestId, colorNoticing, requestId,
+					xssIdList.add(responId);
+					setTableWhenFindVulner(table1, responId, colorNoticing, tmp.getValue().requestId,
 							tmp.getValue().Argv);
 					return true;
 				}
@@ -223,25 +223,29 @@ public class BurpExtender extends AbstractTableModel
 
 	}
 
-	private static void setTableWhenFindVulner(Table table, int rowIndex, Color color, int xssRequestId,
+	private void setTableWhenFindVulner(Table table, int responId, Color color, int xssRequestId,
 			String xssRequestArgv) {
-		Utilities.out("rowIndex:" + String.valueOf(rowIndex) + " xssRequestId:" + String.valueOf(xssRequestId));
+		Utilities.out("responId:" + String.valueOf(responId) + " xssRequestId:" + String.valueOf(xssRequestId)
+				+ " xssRequestArgv:" + xssRequestArgv);
 
 		try {
 			synchronized (log) {
-				String oriId = log.get(rowIndex).xssid;
+				String oriId = log.get(responId).xssid;
 				if (oriId == null) {
 					oriId = "";
 				}
-				log.get(rowIndex).xssid = oriId + " " + String.valueOf(xssRequestId);
-				String oriArgv = log.get(rowIndex).xssRequestArgv;
+				if (!oriId.equals(" " + String.valueOf(xssRequestId))) {
+					log.get(responId).xssid = oriId + " " + String.valueOf(xssRequestId);
+				}
+
+				String oriArgv = log.get(responId).xssRequestArgv;
 				if (oriArgv == null) {
 					oriArgv = "";
 				}
-				log.get(rowIndex).xssRequestArgv = oriArgv + " " + xssRequestArgv;
-				Utilities.out("rowIndex:" + String.valueOf(rowIndex));
-				Utilities.out("oriId:" + oriId + String.valueOf(xssRequestId));
-				Utilities.out("oriArgv:" + oriArgv + xssRequestArgv);
+				if (!oriArgv.equals(" " + xssRequestArgv)) {
+					log.get(responId).xssRequestArgv = oriArgv + " " + xssRequestArgv;
+				}
+
 			}
 		} catch (Exception e) {
 			Utilities.err("263" + Utilities.printStackTraceToString(e.fillInStackTrace()));
@@ -272,6 +276,7 @@ public class BurpExtender extends AbstractTableModel
 			for (int i = 0; i < columnCount; i++) {
 				table.getColumn(table.getColumnName(i)).setCellRenderer(tcr);
 			}
+			fireTableDataChanged();
 
 		} catch (Exception e) {
 			Utilities.err("3131" + Utilities.printStackTraceToString(e.fillInStackTrace()));
