@@ -1,4 +1,4 @@
-# XSS-Detcet
+# XSS-Detect
 一个burpsuite插件，用于被动检测可能存在的XSS漏洞的请求。
 后续将完善对于可以请求的xss探针、xss攻击以及DOM型xss检测。
 
