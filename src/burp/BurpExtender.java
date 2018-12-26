@@ -262,15 +262,15 @@ public class BurpExtender extends AbstractTableModel
 		
 		try {
 			synchronized (log) {
-				String oriId = (String) table.getValueAt(rowIndex, 2);
-				if (oriId == "null") {
+				String oriId = log.get(rowIndex).xssid;
+				if (oriId == null) {
 					oriId = "";
 				}
 				log.get(rowIndex).xssid = oriId + " " + String.valueOf(xssRequestId);
 				// table.setValueAt(oriId + " " +
 				// String.valueOf(xssRequestId),rowIndex, 2);
-				String oriArgv = (String) table.getValueAt(rowIndex, 3);
-				if (oriArgv == "null") {
+				String oriArgv = log.get(rowIndex).xssRequestArgv;
+				if (oriArgv == null) {
 					oriArgv = "";
 				}
 				log.get(rowIndex).xssRequestArgv = oriArgv + " " + xssRequestArgv;
