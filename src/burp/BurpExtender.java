@@ -50,7 +50,7 @@ public class BurpExtender extends AbstractTableModel
 	private IMessageEditor requestViewer;
 	private IMessageEditor responseViewer;
 	private IHttpRequestResponse currentlyDisplayedItem;
-	private final List<LogEntry> log = new ArrayList<LogEntry>();
+	private static final List<LogEntry> log = new ArrayList<LogEntry>();
 	SimpleDateFormat df = new SimpleDateFormat("yyyy-MM-dd_HH:mm:ss");
 	private static int intRequestId = 0;
 	private static boolean isOpen = false;
@@ -64,7 +64,7 @@ public class BurpExtender extends AbstractTableModel
 	public void registerExtenderCallbacks(IBurpExtenderCallbacks callbacks) {
 		// TODO Auto-generated method stub
 		new Utilities(callbacks);
-		this.callbacks=callbacks;
+		this.callbacks = callbacks;
 		helpers = callbacks.getHelpers();
 		callbacks.setExtensionName("K-Vulner_XSS-Detect");
 
@@ -101,10 +101,11 @@ public class BurpExtender extends AbstractTableModel
 							isOpen = true;
 						} else {
 							toggleBtn.setText("未开启XSS检测");
-							 hashmapRequestIdWithStr.clear();
-							 isOpen = false;
-							 intRequestId = 0;
-							 table1.clear();
+							hashmapRequestIdWithStr.clear();
+							xssIdList.clear();
+							isOpen = false;
+							intRequestId = 0;
+							table1.clear();
 
 						}
 						// TODO Auto-generated method stub
@@ -134,19 +135,35 @@ public class BurpExtender extends AbstractTableModel
 		if (isOpen && (toolFlag == 4 || toolFlag == 64)) {
 			try {
 
-				if (messageIsRequest) {
-					TraversalArgv(messageInfo, intRequestId);
-				} else {
+//				if (messageIsRequest) {
+//					TraversalArgv(messageInfo, intRequestId);
+//				} else {
+//
+//					// create a new log entry with the message details
+//					synchronized (log) {
+//
+//						int row = log.size();
+//						IHttpRequestResponsePersisted tmp = callbacks.saveBuffersToTempFiles(messageInfo);
+//						// Utilities.out("respones!"+tmp.toString());
+//						log.add(new LogEntry(intRequestId++, tmp, helpers.analyzeRequest(messageInfo).getUrl(),
+//								df.format(new Date())));
+//						fireTableRowsInserted(row, row);
+//					}
+//				}
+				
+				if (!messageIsRequest) {
 					
 					// create a new log entry with the message details
 					synchronized (log) {
 
 						int row = log.size();
-						IHttpRequestResponsePersisted tmp=callbacks.saveBuffersToTempFiles(messageInfo);
-						Utilities.out("respones!"+tmp.toString());
-						log.add(new LogEntry(intRequestId++, tmp,
-								helpers.analyzeRequest(messageInfo).getUrl(), df.format(new Date())));
+						IHttpRequestResponsePersisted tmp = callbacks.saveBuffersToTempFiles(messageInfo);
+						// Utilities.out("respones!"+tmp.toString());
+						log.add(new LogEntry(intRequestId, tmp, helpers.analyzeRequest(messageInfo).getUrl(),
+								df.format(new Date())));
 						fireTableRowsInserted(row, row);
+						TraversalArgv(messageInfo, intRequestId);
+						intRequestId++;
 					}
 				}
 			} catch (Exception e) {
@@ -169,20 +186,20 @@ public class BurpExtender extends AbstractTableModel
 				byte[] tmpRequest;
 				IHttpRequestResponse tmpRespon;
 				String strRequest;
-				Utilities.out(Integer.toHexString(ipara.getType()));
+				// Utilities.out(Integer.toHexString(ipara.getType()));
 				if (ipara.getType() == IParameter.PARAM_JSON) {
 					try {
 
 						strRequest = helpers.bytesToString(request);
 						String[] strArrayRequest = strRequest.split("\r\n\r\n");
-						Utilities.out(strArrayRequest[1].trim());
+						// Utilities.out(strArrayRequest[1].trim());
 						JSONObject jsonObject = JSONObject.parseObject(strArrayRequest[1].trim());
 						jsonObject.put(ipara.getName(), Utilities.randomStr(requestId, ipara.getName()));
-						Utilities.out(jsonObject.toString());
+						// Utilities.out(jsonObject.toString());
 						tmpRequest = helpers.stringToBytes(strArrayRequest[0] + "\r\n\r\n" + jsonObject.toString());
-						Utilities.out(helpers.bytesToString(tmpRequest));
+						// Utilities.out(helpers.bytesToString(tmpRequest));
 						tmpRespon = callbacks.makeHttpRequest(messageInfo.getHttpService(), tmpRequest);
-						Utilities.out(helpers.bytesToString(tmpRespon.getResponse()));
+						// Utilities.out(helpers.bytesToString(tmpRespon.getResponse()));
 						search(tmpRespon, requestId, table1);
 					} catch (Exception e) {
 						Utilities.err("124" + Utilities.printStackTraceToString(e.fillInStackTrace()));
@@ -193,9 +210,9 @@ public class BurpExtender extends AbstractTableModel
 						tmpIpara = helpers.buildParameter(ipara.getName(),
 								Utilities.randomStr(requestId, ipara.getName()), ipara.getType());
 						tmpRequest = helpers.updateParameter(request, tmpIpara);
-						Utilities.out("begin"+helpers.bytesToString(tmpRequest)+"end");
+						// Utilities.out("begin"+helpers.bytesToString(tmpRequest)+"end");
 						tmpRespon = callbacks.makeHttpRequest(messageInfo.getHttpService(), tmpRequest);
-						Utilities.out("respones!!!!"+helpers.bytesToString(tmpRespon.getResponse()));
+						// Utilities.out("respones!!!!"+helpers.bytesToString(tmpRespon.getResponse()));
 						search(tmpRespon, requestId, table1);
 					} catch (Exception e) {
 						Utilities.err("238" + Utilities.printStackTraceToString(e.fillInStackTrace()));
@@ -218,10 +235,10 @@ public class BurpExtender extends AbstractTableModel
 	boolean search(IHttpRequestResponse messageInfo, int requestId, Table table1) {
 		String tmpRespon = helpers.bytesToString(messageInfo.getResponse());
 		for (Entry<String, RandomStrLog> tmp : Utilities.hashmapRequestIdWithStr.entrySet()) {
-			Utilities.out(tmp.getKey() + ":" + tmp.getValue().requestId + "_" + tmp.getValue().Argv);
+//			Utilities.out(tmp.getKey() + ":" + tmp.getValue().requestId + "_" + tmp.getValue().Argv);
 			try {
 				if (tmpRespon.contains(tmp.getKey())) {
-					Utilities.out("FIND IT!!" + tmp.getKey());
+//					Utilities.out("FIND IT!!" + tmp.getKey());
 					xssIdList.add(requestId);
 					setTableWhenFindVulner(table1, tmp.getValue().requestId, colorNoticing, requestId,
 							tmp.getValue().Argv);
@@ -238,16 +255,35 @@ public class BurpExtender extends AbstractTableModel
 
 	private static void setTableWhenFindVulner(Table table, int rowIndex, Color color, int xssRequestId,
 			String xssRequestArgv) {
+		Utilities.out("rowIndex:"+String.valueOf(rowIndex)+" xssRequestId:"+String.valueOf(xssRequestId));
+//		if(log.size()<=rowIndex){
+//			sleep()
+//		}
+		
 		try {
-
-			// String oriId = (String) table.getValueAt(rowIndex, 2);
-			// table.setValueAt(oriId + " " + String.valueOf(xssRequestId),
-			// rowIndex, 2);
-			// String oriArgv = (String) table.getValueAt(rowIndex, 3);
-			// table.setValueAt(oriArgv + " " + xssRequestArgv, rowIndex, 3);
-			// Utilities.out("oriId:" + oriId + String.valueOf(xssRequestId));
-			// Utilities.out("oriArgv:" + oriArgv + xssRequestArgv);
-
+			synchronized (log) {
+				String oriId = (String) table.getValueAt(rowIndex, 2);
+				if (oriId == "null") {
+					oriId = "";
+				}
+				log.get(rowIndex).xssid = oriId + " " + String.valueOf(xssRequestId);
+				// table.setValueAt(oriId + " " +
+				// String.valueOf(xssRequestId),rowIndex, 2);
+				String oriArgv = (String) table.getValueAt(rowIndex, 3);
+				if (oriArgv == "null") {
+					oriArgv = "";
+				}
+				log.get(rowIndex).xssRequestArgv = oriArgv + " " + xssRequestArgv;
+				// table.setValueAt(oriArgv + " " + xssRequestArgv, rowIndex,3);
+				Utilities.out("rowIndex:" + String.valueOf(rowIndex));
+				Utilities.out("oriId:" + oriId + String.valueOf(xssRequestId));
+				Utilities.out("oriArgv:" + oriArgv + xssRequestArgv);
+			}
+		} catch (Exception e) {
+			Utilities.err("263" + Utilities.printStackTraceToString(e.fillInStackTrace()));
+		}
+			
+			try {
 			DefaultTableCellRenderer tcr = new DefaultTableCellRenderer() {
 
 				/**
@@ -260,11 +296,13 @@ public class BurpExtender extends AbstractTableModel
 					if (xssIdList.contains(row)) {
 						setBackground(color);
 						setForeground(Color.BLACK);
-						Utilities.out(String.valueOf(row) + ":" + String.valueOf(column) + ":!!!!yellow!!!!");
+						// Utilities.out(String.valueOf(row) + ":" +
+						// String.valueOf(column) + ":!!!!yellow!!!!");
 					} else {
 						setBackground(Color.WHITE);
 						setForeground(Color.BLACK);
-						Utilities.out(String.valueOf(row) + ":" + String.valueOf(column) + ":white3333");
+						// Utilities.out(String.valueOf(row) + ":" +
+						// String.valueOf(column) + ":white3333");
 					}
 
 					return super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
@@ -411,8 +449,8 @@ public class BurpExtender extends AbstractTableModel
 
 	private static class LogEntry {
 		final int id;
-		final Integer xssid;
-		final String xssRequestArgv;
+		String xssid;
+		String xssRequestArgv;
 		final IHttpRequestResponsePersisted requestResponse;
 		final URL url;
 		final String requestTime;
