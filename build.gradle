@@ -1,0 +1,32 @@
+apply plugin: 'java'
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+// https://mvnrepository.com/artifact/com.alibaba/fastjson
+compile group: 'com.alibaba', name: 'fastjson', version: '1.2.54'
+
+// https://mvnrepository.com/artifact/net.portswigger.burp.extender/burp-extender-api
+compile group: 'net.portswigger.burp.extender', name: 'burp-extender-api', version: '1.7.22'
+
+
+}
+
+sourceSets {
+    main {
+        java {
+            srcDir 'src'
+        }
+        resources {
+            srcDir 'resources'
+        }
+    }
+}
+
+task fatJar(type: Jar) {
+    baseName = project.name + '-all'
+    from { configurations.compile.collect { it.isDirectory() ? it : zipTree(it) } }
+    with jar
+}
