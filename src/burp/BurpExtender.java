@@ -134,22 +134,6 @@ public class BurpExtender extends AbstractTableModel
 		// TODO Auto-generated method stub
 		if (isOpen && (toolFlag == 4 || toolFlag == 64)) {
 			try {
-
-//				if (messageIsRequest) {
-//					TraversalArgv(messageInfo, intRequestId);
-//				} else {
-//
-//					// create a new log entry with the message details
-//					synchronized (log) {
-//
-//						int row = log.size();
-//						IHttpRequestResponsePersisted tmp = callbacks.saveBuffersToTempFiles(messageInfo);
-//						// Utilities.out("respones!"+tmp.toString());
-//						log.add(new LogEntry(intRequestId++, tmp, helpers.analyzeRequest(messageInfo).getUrl(),
-//								df.format(new Date())));
-//						fireTableRowsInserted(row, row);
-//					}
-//				}
 				
 				if (!messageIsRequest) {
 					
