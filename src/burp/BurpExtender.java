@@ -41,7 +41,6 @@ public class BurpExtender extends AbstractTableModel
 	private static final long serialVersionUID = 1L;
 
 	public static void main(String[] args) {
-		// System.out.println(randomStr(1,"1"));
 	}
 
 	private static IBurpExtenderCallbacks callbacks;
@@ -58,7 +57,6 @@ public class BurpExtender extends AbstractTableModel
 	static ArrayList<Integer> xssIdList = new ArrayList<Integer>();
 	private static Color colorNoticing = new Color(255, 255, 0);
 	private Table table1 = new Table(BurpExtender.this);
-	// private TableModel tableModel = table1.getModel();
 
 	@Override
 	public void registerExtenderCallbacks(IBurpExtenderCallbacks callbacks) {
@@ -134,15 +132,14 @@ public class BurpExtender extends AbstractTableModel
 		// TODO Auto-generated method stub
 		if (isOpen && (toolFlag == 4 || toolFlag == 64)) {
 			try {
-				
+
 				if (!messageIsRequest) {
-					
+
 					// create a new log entry with the message details
 					synchronized (log) {
 
 						int row = log.size();
 						IHttpRequestResponsePersisted tmp = callbacks.saveBuffersToTempFiles(messageInfo);
-						// Utilities.out("respones!"+tmp.toString());
 						log.add(new LogEntry(intRequestId, tmp, helpers.analyzeRequest(messageInfo).getUrl(),
 								df.format(new Date())));
 						fireTableRowsInserted(row, row);
@@ -170,20 +167,15 @@ public class BurpExtender extends AbstractTableModel
 				byte[] tmpRequest;
 				IHttpRequestResponse tmpRespon;
 				String strRequest;
-				// Utilities.out(Integer.toHexString(ipara.getType()));
 				if (ipara.getType() == IParameter.PARAM_JSON) {
 					try {
 
 						strRequest = helpers.bytesToString(request);
 						String[] strArrayRequest = strRequest.split("\r\n\r\n");
-						// Utilities.out(strArrayRequest[1].trim());
 						JSONObject jsonObject = JSONObject.parseObject(strArrayRequest[1].trim());
 						jsonObject.put(ipara.getName(), Utilities.randomStr(requestId, ipara.getName()));
-						// Utilities.out(jsonObject.toString());
 						tmpRequest = helpers.stringToBytes(strArrayRequest[0] + "\r\n\r\n" + jsonObject.toString());
-						// Utilities.out(helpers.bytesToString(tmpRequest));
 						tmpRespon = callbacks.makeHttpRequest(messageInfo.getHttpService(), tmpRequest);
-						// Utilities.out(helpers.bytesToString(tmpRespon.getResponse()));
 						search(tmpRespon, requestId, table1);
 					} catch (Exception e) {
 						Utilities.err("124" + Utilities.printStackTraceToString(e.fillInStackTrace()));
@@ -194,9 +186,7 @@ public class BurpExtender extends AbstractTableModel
 						tmpIpara = helpers.buildParameter(ipara.getName(),
 								Utilities.randomStr(requestId, ipara.getName()), ipara.getType());
 						tmpRequest = helpers.updateParameter(request, tmpIpara);
-						// Utilities.out("begin"+helpers.bytesToString(tmpRequest)+"end");
 						tmpRespon = callbacks.makeHttpRequest(messageInfo.getHttpService(), tmpRequest);
-						// Utilities.out("respones!!!!"+helpers.bytesToString(tmpRespon.getResponse()));
 						search(tmpRespon, requestId, table1);
 					} catch (Exception e) {
 						Utilities.err("238" + Utilities.printStackTraceToString(e.fillInStackTrace()));
@@ -209,8 +199,6 @@ public class BurpExtender extends AbstractTableModel
 			}
 
 		}
-		// Utilities.out(collab.generatePayload(true));
-		// Utilities.out(collab.generatePayload(false));
 
 		return request;
 
@@ -219,10 +207,8 @@ public class BurpExtender extends AbstractTableModel
 	boolean search(IHttpRequestResponse messageInfo, int requestId, Table table1) {
 		String tmpRespon = helpers.bytesToString(messageInfo.getResponse());
 		for (Entry<String, RandomStrLog> tmp : Utilities.hashmapRequestIdWithStr.entrySet()) {
-//			Utilities.out(tmp.getKey() + ":" + tmp.getValue().requestId + "_" + tmp.getValue().Argv);
 			try {
 				if (tmpRespon.contains(tmp.getKey())) {
-//					Utilities.out("FIND IT!!" + tmp.getKey());
 					xssIdList.add(requestId);
 					setTableWhenFindVulner(table1, tmp.getValue().requestId, colorNoticing, requestId,
 							tmp.getValue().Argv);
@@ -239,11 +225,8 @@ public class BurpExtender extends AbstractTableModel
 
 	private static void setTableWhenFindVulner(Table table, int rowIndex, Color color, int xssRequestId,
 			String xssRequestArgv) {
-		Utilities.out("rowIndex:"+String.valueOf(rowIndex)+" xssRequestId:"+String.valueOf(xssRequestId));
-//		if(log.size()<=rowIndex){
-//			sleep()
-//		}
-		
+		Utilities.out("rowIndex:" + String.valueOf(rowIndex) + " xssRequestId:" + String.valueOf(xssRequestId));
+
 		try {
 			synchronized (log) {
 				String oriId = log.get(rowIndex).xssid;
@@ -251,14 +234,11 @@ public class BurpExtender extends AbstractTableModel
 					oriId = "";
 				}
 				log.get(rowIndex).xssid = oriId + " " + String.valueOf(xssRequestId);
-				// table.setValueAt(oriId + " " +
-				// String.valueOf(xssRequestId),rowIndex, 2);
 				String oriArgv = log.get(rowIndex).xssRequestArgv;
 				if (oriArgv == null) {
 					oriArgv = "";
 				}
 				log.get(rowIndex).xssRequestArgv = oriArgv + " " + xssRequestArgv;
-				// table.setValueAt(oriArgv + " " + xssRequestArgv, rowIndex,3);
 				Utilities.out("rowIndex:" + String.valueOf(rowIndex));
 				Utilities.out("oriId:" + oriId + String.valueOf(xssRequestId));
 				Utilities.out("oriArgv:" + oriArgv + xssRequestArgv);
@@ -266,8 +246,8 @@ public class BurpExtender extends AbstractTableModel
 		} catch (Exception e) {
 			Utilities.err("263" + Utilities.printStackTraceToString(e.fillInStackTrace()));
 		}
-			
-			try {
+
+		try {
 			DefaultTableCellRenderer tcr = new DefaultTableCellRenderer() {
 
 				/**
@@ -280,13 +260,9 @@ public class BurpExtender extends AbstractTableModel
 					if (xssIdList.contains(row)) {
 						setBackground(color);
 						setForeground(Color.BLACK);
-						// Utilities.out(String.valueOf(row) + ":" +
-						// String.valueOf(column) + ":!!!!yellow!!!!");
 					} else {
 						setBackground(Color.WHITE);
 						setForeground(Color.BLACK);
-						// Utilities.out(String.valueOf(row) + ":" +
-						// String.valueOf(column) + ":white3333");
 					}
 
 					return super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
@@ -366,7 +342,6 @@ public class BurpExtender extends AbstractTableModel
 
 	@Override
 	public Object getValueAt(int rowIndex, int columnIndex) {
-		// Utilities.out("row:"+String.valueOf(rowIndex)+"col:"+String.valueOf(columnIndex));
 		try {
 			LogEntry logEntry = log.get(rowIndex);
 
